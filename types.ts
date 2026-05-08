@@ -4,6 +4,14 @@ export enum ProductionMode {
   TREND_SPRINTER = 'Trend Sprinter',
 }
 
+export interface ChannelProfile {
+  channelName: string;
+  visualIdentity: string; // e.g., "Futuristic Neon", "Vintage Retro"
+  signatureColors: string; // e.g., "Pink and Purple", "Deep Blue and Silver"
+  recurringCharacter?: string; // e.g., "A robotic owl", "A girl with headphones"
+  aestheticStyle: string; // e.g., "Saturated colors, high contrast", "Minimalist, flat design"
+}
+
 export enum Region {
   GLOBAL = 'Global',
   ASIA = 'Asia',
@@ -56,9 +64,9 @@ export interface Topic {
 
 export interface SEOPackage {
   titleVariants: {
-    searchFocused: string;
-    emotionalClickbait: string;
-    shortForm: string;
+    searchFocused: string[];
+    emotionalClickbait: string[];
+    shortForm: string[];
   };
   sunoStyle: string;
   thumbnailPrompts: string[];

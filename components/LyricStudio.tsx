@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateSongStudioData } from '../services/geminiService';
-import { Topic, SongStudioData } from '../types';
+import { Topic, SongStudioData, ChannelProfile } from '../types';
 import { Button } from './ui/Button';
 import { LoadingBar } from './ui/LoadingBar';
 import { Music, AlignLeft, Download, ArrowRight, Image, Copy, Sparkles, Zap } from 'lucide-react';
@@ -10,9 +10,10 @@ interface LyricStudioProps {
   initialData?: SongStudioData | null;
   onUpdate?: (data: SongStudioData) => void;
   onComplete: (data: SongStudioData) => void;
+  channelProfile: ChannelProfile;
 }
 
-export const LyricStudio: React.FC<LyricStudioProps> = ({ topic, initialData, onUpdate, onComplete }) => {
+export const LyricStudio: React.FC<LyricStudioProps> = ({ topic, initialData, onUpdate, onComplete, channelProfile }) => {
   const [songData, setSongData] = useState<SongStudioData | null>(initialData || null);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +26,7 @@ export const LyricStudio: React.FC<LyricStudioProps> = ({ topic, initialData, on
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const data = await generateSongStudioData(topic.title);
+      const data = await generateSongStudioData(topic.title, channelProfile);
       if (data) {
         setSongData(data);
         if (onUpdate) onUpdate(data);

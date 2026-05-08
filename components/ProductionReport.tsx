@@ -59,9 +59,9 @@ export const ProductionReport: React.FC<ProductionReportProps> = ({
     content += `--- MODULE 2: SONIC OPTIMIZATION ---\n`;
     content += `Suno Style: ${seoData.sunoStyle}\n\n`;
     content += `Title Variants:\n`;
-    content += `1: ${seoData.titleVariants.searchFocused}\n`;
-    content += `2: ${seoData.titleVariants.emotionalClickbait}\n`;
-    content += `3: ${seoData.titleVariants.shortForm}\n\n`;
+    content += `[Focus]: ${Array.isArray(seoData.titleVariants.searchFocused) ? seoData.titleVariants.searchFocused.join(' | ') : seoData.titleVariants.searchFocused}\n`;
+    content += `[Emotion]: ${Array.isArray(seoData.titleVariants.emotionalClickbait) ? seoData.titleVariants.emotionalClickbait.join(' | ') : seoData.titleVariants.emotionalClickbait}\n`;
+    content += `[Shorts]: ${Array.isArray(seoData.titleVariants.shortForm) ? seoData.titleVariants.shortForm.join(' | ') : seoData.titleVariants.shortForm}\n\n`;
     
     content += `Description:\n${seoData.description}\n\n`;
     content += `Tags: ${seoData.tags.join(', ')}\n\n`;
@@ -100,7 +100,11 @@ export const ProductionReport: React.FC<ProductionReportProps> = ({
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] text-slate-500 uppercase font-mono">Title</label>
-                <p className="text-slate-900 font-bold text-xl">{seoData.titleVariants.searchFocused}</p>
+                <p className="text-slate-900 font-bold text-xl">
+                  {Array.isArray(seoData.titleVariants.searchFocused) 
+                    ? seoData.titleVariants.searchFocused[0] 
+                    : seoData.titleVariants.searchFocused}
+                </p>
               </div>
               <div>
                 <label className="text-[10px] text-slate-500 uppercase font-mono">Genre & Mood</label>

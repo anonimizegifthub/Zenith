@@ -5,8 +5,9 @@ import { LyricStudio } from './components/LyricStudio';
 import { ProductionReport } from './components/ProductionReport';
 import { VeoStudio } from './components/VeoStudio';
 import { ThumbnailStudio } from './components/ThumbnailStudio';
-import { AppStage, Topic, SEOPackage, SongStudioData, SavedProject } from './types';
-import { Layers, Film, Image } from 'lucide-react';
+import { ChannelSettings } from './components/ChannelSettings';
+import { AppStage, Topic, SEOPackage, SongStudioData, SavedProject, ChannelProfile } from './types';
+import { Layers, Film, Image, Settings, X } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'production' | 'veo' | 'thumbnail'>('production');
@@ -14,6 +15,20 @@ const App: React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [generatedIdeas, setGeneratedIdeas] = useState<Topic[]>([]);
   
+  // Channel Profile State
+  const [channelProfile, setChannelProfile] = useState<ChannelProfile>(() => {
+    const saved = localStorage.getItem('mindform_channel_profile');
+    if (saved) return JSON.parse(saved);
+    return {
+      channelName: 'MINDFORM Music',
+      visualIdentity: 'Futuristic Cyberpunk Aesthetic',
+      signatureColors: 'Neon Pink, Violet, and Deep Cyber Blue',
+      recurringCharacter: 'A recurring holographic silhouette of a woman',
+      aestheticStyle: 'High contrast, saturated neon colors, sleek futuristic lines, cinematic lofi atmosphere.'
+    };
+  });
+  const [showSettings, setShowSettings] = useState(false);
+
   // State lifting for final export and saving
   const [seoData, setSeoData] = useState<SEOPackage | null>(null);
   const [songData, setSongData] = useState<SongStudioData | null>(null);
@@ -110,16 +125,25 @@ const App: React.FC = () => {
     setStage(AppStage.IDEA_HUB);
   };
 
+  const saveChannelProfile = (profile: ChannelProfile) => {
+    setChannelProfile(profile);
+    localStorage.setItem('mindform_channel_profile', JSON.stringify(profile));
+  };
+
   return (
     <div className="min-h-screen bg-void-900 text-slate-900 font-sans selection:bg-pink-100 selection:text-pink-900">
       {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-pink-600 rounded flex items-center justify-center text-white font-bold font-mono text-xl shadow-sm">
-              V
-            </div>
-            <div>
+            <button 
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-2 rounded-lg transition-all border ${showSettings ? 'bg-pink-100 border-pink-300 text-pink-600' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+              title="Channel Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <div className="hidden md:block">
               <h1 className="font-mono font-bold text-lg tracking-wider text-slate-900 uppercase">Void Music</h1>
               <div className="text-[10px] text-pink-600 tracking-[0.2em] font-mono leading-none">AI MUSIC PRODUCTION V1.0</div>
             </div>
@@ -183,9 +207,21 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pt-24 pb-20 px-4">
+      <main className="pt-24 pb-20 px-4 relative">
         <div className="max-w-7xl mx-auto">
           
+          {/* Settings Overlay */}
+          {showSettings && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
+              <ChannelSettings 
+                profile={channelProfile} 
+                onSave={saveChannelProfile} 
+                onClose={() => setShowSettings(false)} 
+              />
+            </div>
+          )}
+
           {/* Tab 1: Production Engine (Preserved State using display style) */}
           <div className={activeTab === 'production' ? 'block' : 'hidden'}>
             
@@ -241,6 +277,7 @@ const App: React.FC = () => {
                 onLoadProject={handleLoadProject}
                 persistentIdeas={generatedIdeas}
                 onIdeasUpdate={setGeneratedIdeas}
+                channelProfile={channelProfile}
               />
             )}
 
@@ -250,6 +287,7 @@ const App: React.FC = () => {
                 initialData={seoData}
                 onUpdate={setSeoData}
                 onComplete={handleAlgorithmComplete} 
+                channelProfile={channelProfile}
               />
             )}
 
@@ -259,6 +297,7 @@ const App: React.FC = () => {
                 initialData={songData}
                 onUpdate={handleSongUpdate}
                 onComplete={handleSongComplete} 
+                channelProfile={channelProfile}
               />
             )}
 

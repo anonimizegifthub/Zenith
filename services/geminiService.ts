@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from '../constants';
-import { Topic, SEOPackage, SongStudioData, Region, MusicGenre, MusicMood, GroundingSource, ProductionMode } from '../types';
+import { Topic, SEOPackage, SongStudioData, Region, MusicGenre, MusicMood, GroundingSource, ProductionMode, ChannelProfile } from '../types';
 
 const getAPIKey = (customKey?: string) => {
   // Priority: 1. Manual function argument, 2. Local Storage (User Input), 3. Environment Variables
@@ -60,7 +60,6 @@ const parseGeminiResponse = (response: any) => {
 
   try {
     // 2. Manual parsing of response.text
-    // Note: response.text is a getter in the new SDK
     const textStr = response.text || "";
     if (!textStr) {
        console.warn("Empty response text");
@@ -81,12 +80,20 @@ export const generateIdeas = async (
   region: Region = Region.GLOBAL, 
   categories: MusicGenre[] = [], 
   useSearch: boolean = false,
-  mode: ProductionMode = ProductionMode.GENRE_PURITY
+  mode: ProductionMode = ProductionMode.GENRE_PURITY,
+  profile?: ChannelProfile
 ): Promise<Topic[]> => {
   try {
     const ai = getAI();
     const categoryList = categories.length > 0 ? categories.join(", ") : "Semua Genre Musik Populer";
     
+    const profileContext = profile 
+      ? `CHANNEL BRANDING: This music is for "${profile.channelName}". 
+         Visual ID: ${profile.visualIdentity}.
+         Recurring Elements: ${profile.recurringCharacter || 'None'}.
+         Style/Mood: ${profile.aestheticStyle}.`
+      : "";
+
     const config: any = {
       systemInstruction: SYSTEM_INSTRUCTION,
       responseMimeType: "application/json",
@@ -119,6 +126,7 @@ export const generateIdeas = async (
       Target Region: ${region}
       Target Genres: ${categoryList}
       Production Mode: ${mode}
+      ${profileContext}
       ${useSearch ? "REAL-TIME SEARCH ENABLED: Access current TikTok Billboard and Spotify Charts." : ""}
 
       Suggest 5 viral song concepts that are highly relevant to ${region} but have global appeal.
@@ -163,7 +171,6 @@ export const generateIdeas = async (
     return topics;
   } catch (error: any) {
     console.error("generateIdeas API Error:", error);
-    // Rethrow to allow UI to handle specific error messages if needed
     throw error;
   }
 };
@@ -231,12 +238,22 @@ export const optimizeManualTopic = async (rawInput: string, useSearch: boolean =
   }
 };
 
-export const generateAlgorithmSuite = async (topicTitle: string): Promise<SEOPackage | null> => {
+export const generateAlgorithmSuite = async (topicTitle: string, profile?: ChannelProfile): Promise<SEOPackage | null> => {
   try {
     const ai = getAI();
+    const profileContext = profile 
+      ? `BRAND CONSISTENCY: This project belongs to the channel "${profile.channelName}".
+         The signature color palette is: ${profile.signatureColors}.
+         Consistent visual identity: ${profile.visualIdentity}.
+         Recurring character/elements to include in prompts: ${profile.recurringCharacter || 'None'}.
+         Overall aesthetic: ${profile.aestheticStyle}.
+         ENSURE ALL "Cover Art Prompts" strictly follow this style for channel recognition.`
+      : "";
+
     const response = await ai.models.generateContent({
       model: getModelId(),
       contents: `Initialize MODULE 2: THE MUSIC ALGORITHM SUITE for the song: "${topicTitle}". 
+      ${profileContext}
       PROVIDE 3 VARIATIONS for Titles and 3 VARIATIONS for Cover Art Prompts.`,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
@@ -247,9 +264,24 @@ export const generateAlgorithmSuite = async (topicTitle: string): Promise<SEOPac
             titleVariants: {
               type: Type.OBJECT,
               properties: {
-                searchFocused: { type: Type.STRING },
-                emotionalClickbait: { type: Type.STRING },
-                shortForm: { type: Type.STRING },
+                searchFocused: { 
+                  type: Type.ARRAY, 
+                  items: { type: Type.STRING },
+                  minItems: 3,
+                  maxItems: 3
+                },
+                emotionalClickbait: { 
+                  type: Type.ARRAY, 
+                  items: { type: Type.STRING },
+                  minItems: 3,
+                  maxItems: 3
+                },
+                shortForm: { 
+                  type: Type.ARRAY, 
+                  items: { type: Type.STRING },
+                  minItems: 3,
+                  maxItems: 3
+                },
               },
               required: ["searchFocused", "emotionalClickbait", "shortForm"]
             },
@@ -295,14 +327,23 @@ export const generateAlgorithmSuite = async (topicTitle: string): Promise<SEOPac
 };
 
 export const generateSongStudioData = async (
-  topicTitle: string
+  topicTitle: string,
+  profile?: ChannelProfile
 ): Promise<SongStudioData | null> => {
   try {
     const ai = getAI();
     
+    const profileContext = profile 
+      ? `BRAND CONSISTENCY: Visualizer must maintain the "${profile.channelName}" identity.
+         Colors: ${profile.signatureColors}. Style: ${profile.visualIdentity}.
+         Recurring Elements: ${profile.recurringCharacter || 'None'}.
+         The "VISUALIZER PROMPT" MUST anchor on these elements to ensure viewers recognize the channel instantly.`
+      : "";
+
     const prompt = `
       Initialize MODULE 3: THE LYRIC & VISUALIZER PRODUCTION for track "${topicTitle}".
       Generate a complete song layout optimized for Suno AI.
+      ${profileContext}
       
       REQUIREMENTS:
       1. FULL LYRICS: A unified block of lyrics including structural tags like [Intro], [Verse 1], [Chorus], [Bridge], [Outro]. Make it poetic and rhythmic.

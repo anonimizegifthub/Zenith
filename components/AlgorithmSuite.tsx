@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { generateAlgorithmSuite } from '../services/geminiService';
-import { Topic, SEOPackage } from '../types';
+import { Topic, SEOPackage, ChannelProfile } from '../types';
 import { Button } from './ui/Button';
 import { LoadingBar } from './ui/LoadingBar';
 import { Search, Image, Hash, MessageSquare, ArrowRight, Copy, Check, Type, Zap } from 'lucide-react';
@@ -33,7 +33,7 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialData, onUpdate, onComplete }) => {
+export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialData, onUpdate, onComplete, channelProfile }) => {
   const [data, setData] = useState<SEOPackage | null>(initialData || null);
   const [loading, setLoading] = useState(false);
   const [lastProcessedTopic, setLastProcessedTopic] = useState<string | null>(initialData ? topic.title : null);
@@ -53,7 +53,7 @@ export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialDa
       const fetchData = async () => {
         setLoading(true);
         try {
-          const result = await generateAlgorithmSuite(topic.title);
+          const result = await generateAlgorithmSuite(topic.title, channelProfile);
           setData(result);
           setLastProcessedTopic(topic.title);
           if (onUpdate) onUpdate(result);
@@ -118,26 +118,38 @@ export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialDa
           <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
             <span className="text-pink-600">01</span> VARIASI JUDUL LAGU
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="group">
-              <span className="text-xs font-mono text-slate-500 uppercase">Fokus Pencarian</span>
-              <div className="flex items-center justify-between">
-                <div className="text-green-700 font-bold text-lg">{data.titleVariants.searchFocused}</div>
-                <CopyButton text={data.titleVariants.searchFocused} />
+              <span className="text-xs font-mono text-slate-500 uppercase block mb-2">Fokus Pencarian - 3 Variasi</span>
+              <div className="space-y-2">
+                {(Array.isArray(data.titleVariants.searchFocused) ? data.titleVariants.searchFocused : [data.titleVariants.searchFocused]).map((title: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-100 shadow-sm">
+                    <div className="text-green-700 font-bold text-base">{title}</div>
+                    <CopyButton text={title} />
+                  </div>
+                ))}
               </div>
             </div>
             <div className="group">
-              <span className="text-xs font-mono text-slate-500 uppercase">Emosional / Clickbait</span>
-              <div className="flex items-center justify-between">
-                <div className="text-orange-700 font-bold text-lg">{data.titleVariants.emotionalClickbait}</div>
-                <CopyButton text={data.titleVariants.emotionalClickbait} />
+              <span className="text-xs font-mono text-slate-500 uppercase block mb-2">Emosional / Clickbait - 3 Variasi</span>
+              <div className="space-y-2">
+                {(Array.isArray(data.titleVariants.emotionalClickbait) ? data.titleVariants.emotionalClickbait : [data.titleVariants.emotionalClickbait]).map((title: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-100 shadow-sm">
+                    <div className="text-orange-700 font-bold text-base">{title}</div>
+                    <CopyButton text={title} />
+                  </div>
+                ))}
               </div>
             </div>
             <div className="group">
-              <span className="text-xs font-mono text-slate-500 uppercase">Durasi Pendek (Shorts)</span>
-              <div className="flex items-center justify-between">
-                <div className="text-purple-700 font-bold text-lg">{data.titleVariants.shortForm}</div>
-                <CopyButton text={data.titleVariants.shortForm} />
+              <span className="text-xs font-mono text-slate-500 uppercase block mb-2">Durasi Pendek (Shorts) - 3 Variasi</span>
+              <div className="space-y-2">
+                {(Array.isArray(data.titleVariants.shortForm) ? data.titleVariants.shortForm : [data.titleVariants.shortForm]).map((title: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-100 shadow-sm">
+                    <div className="text-purple-700 font-bold text-base">{title}</div>
+                    <CopyButton text={title} />
+                  </div>
+                ))}
               </div>
             </div>
           </div>

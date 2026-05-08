@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateIdeas, optimizeManualTopic } from '../services/geminiService';
-import { Topic, SavedProject, Region, MusicGenre, MusicMood, ProductionMode } from '../types';
+import { Topic, SavedProject, Region, MusicGenre, MusicMood, ProductionMode, ChannelProfile } from '../types';
 import { Button } from './ui/Button';
 import { LoadingBar } from './ui/LoadingBar';
 import { Sparkles, TrendingUp, Eye, Zap, AlertTriangle, RefreshCw, PenTool, ArrowRight, Save, Clock, Trash2, FolderOpen, Upload, Download, FileJson, Globe, Filter, Check, Search, ExternalLink, RotateCcw, LayoutPanelLeft } from 'lucide-react';
@@ -10,13 +10,15 @@ interface IdeaHubProps {
   onLoadProject: (project: SavedProject) => void;
   persistentIdeas: Topic[];
   onIdeasUpdate: (ideas: Topic[]) => void;
+  channelProfile: ChannelProfile;
 }
 
 export const IdeaHub: React.FC<IdeaHubProps> = ({ 
   onSelectTopic, 
   onLoadProject,
   persistentIdeas,
-  onIdeasUpdate
+  onIdeasUpdate,
+  channelProfile
 }) => {
   const [ideas, setIdeas] = useState<Topic[]>(persistentIdeas);
   
@@ -78,7 +80,7 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
     updateIdeas([]);
     setErrorMessage('');
     try {
-      const result = await generateIdeas(selectedRegion, selectedCategories, useSearchGrounding, selectedMode);
+      const result = await generateIdeas(selectedRegion, selectedCategories, useSearchGrounding, selectedMode, channelProfile);
       if (result && result.length > 0) {
         // Sort by CTR descending
         const sortedIdeas = [...result].sort((a, b) => b.predictedCTR - a.predictedCTR);
