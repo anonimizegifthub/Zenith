@@ -30,8 +30,10 @@ Provide 5 high-potential song concepts spanning different genres and moods.
 Include: Genre, Mood, Viral Logic, and Estimated Catchiness.
 
 [MODULE 2: THE ALGORITHM SUITE]
-Generate 3 Viral Song Titles, 2 Image-Gen Prompts for Cover Art, and SEO Metadata.
-CRITICAL: Generate a "Suno Style Prompt" (max 120 characters) that includes specific instruments, BPM, and mood.
+Generate 3 Viral Song Titles, 3 Image-Gen Prompts for Cover Art, and SEO Metadata.
+CRITICAL: 
+1. Generate a "Suno Style Prompt" (max 120 characters) that includes specific instruments, BPM, and mood.
+2. In each "Cover Art Prompt", include a specific recommendation for text overlay (the song title or a catchy phrase) as part of the image generation instructions (e.g., "Add the text 'TITLE' in bold futuristic typography").
 
 [MODULE 3: THE LYRIC & VISUALIZER PRODUCTION]
 Generate a complete song layout.

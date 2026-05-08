@@ -154,7 +154,7 @@ export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialDa
             {/* Visual Prompts */}
             <div>
               <span className="text-xs font-mono text-slate-500 uppercase block mb-2 flex items-center gap-2">
-                 <Image className="w-3 h-3" /> Prompts Sampul Lagu
+                 <Image className="w-3 h-3" /> 3 Variasi Prompts Sampul (Sudah Termasuk Teks)
               </span>
               <div className="space-y-3">
                 {data.thumbnailPrompts.map((prompt, idx) => (
@@ -164,33 +164,9 @@ export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialDa
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Text Overlays */}
-            <div>
-              <span className="text-xs font-mono text-slate-500 uppercase block mb-2 flex items-center gap-2">
-                 <Type className="w-3 h-3" /> Rekomendasi Teks Overlay (Main + Sub)
-              </span>
-              <div className="grid grid-cols-1 gap-3">
-                {data.thumbnailText && data.thumbnailText.length > 0 ? (
-                  data.thumbnailText.map((item, idx) => (
-                    <div key={idx} className="bg-slate-50 p-3 rounded border border-slate-200 flex flex-col gap-1 shadow-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-base font-bold text-yellow-700 font-sans tracking-tight">{item.text}</span>
-                        <CopyButton text={item.text} />
-                      </div>
-                      <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1">
-                        <p className="text-xs text-slate-600 font-medium font-sans">
-                          {item.description}
-                        </p>
-                        <CopyButton text={item.description} />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-slate-500 italic px-2">Data teks tidak tersedia untuk entri lama.</div>
-                )}
-              </div>
+              <p className="mt-3 text-[10px] text-slate-500 font-mono italic">
+                *Prompt di atas sudah termasuk instruksi overlay judul lagu untuk hasil profesional.
+              </p>
             </div>
           </div>
         </div>

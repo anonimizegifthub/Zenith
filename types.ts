@@ -62,7 +62,7 @@ export interface SEOPackage {
   };
   sunoStyle: string;
   thumbnailPrompts: string[];
-  thumbnailText: {
+  thumbnailText?: {
     text: string;
     description: string;
   }[];

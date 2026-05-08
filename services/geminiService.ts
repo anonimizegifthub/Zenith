@@ -236,7 +236,8 @@ export const generateAlgorithmSuite = async (topicTitle: string): Promise<SEOPac
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: getModelId(),
-      contents: `Initialize MODULE 2: THE MUSIC ALGORITHM SUITE for the song: "${topicTitle}".`,
+      contents: `Initialize MODULE 2: THE MUSIC ALGORITHM SUITE for the song: "${topicTitle}". 
+      PROVIDE 3 VARIATIONS for Titles and 3 VARIATIONS for Cover Art Prompts.`,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -255,7 +256,9 @@ export const generateAlgorithmSuite = async (topicTitle: string): Promise<SEOPac
             sunoStyle: { type: Type.STRING },
             thumbnailPrompts: {
               type: Type.ARRAY,
-              items: { type: Type.STRING }
+              items: { type: Type.STRING },
+              minItems: 3,
+              maxItems: 3
             },
             thumbnailText: {
               type: Type.ARRAY,
