@@ -472,12 +472,14 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
                 <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter">Earworm Potential / CATCHY RATE</div>
-                    <div className="text-sm font-bold text-pink-600 font-mono">{topic.predictedCTR.toFixed(1)}%</div>
+                    <div className="text-sm font-bold text-pink-600 font-mono">
+                      {(topic.predictedCTR < 1 ? topic.predictedCTR * 100 : topic.predictedCTR).toFixed(1)}%
+                    </div>
                   </div>
                   <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-pink-600 to-pink-400 shadow-sm transition-all duration-1000" 
-                      style={{ width: `${Math.min(topic.predictedCTR * 4, 100)}%` }} 
+                      style={{ width: `${Math.min((topic.predictedCTR < 1 ? topic.predictedCTR * 100 : topic.predictedCTR), 100)}%` }} 
                     />
                   </div>
                 </div>

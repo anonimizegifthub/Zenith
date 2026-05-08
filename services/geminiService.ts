@@ -35,6 +35,30 @@ const modelId = 'gemini-3-flash-preview';
 // Fallback model if the experimental one is restricted
 const getModelId = () => modelId;
 
+/**
+ * Handle Gemini API Errors gracefully, focusing on Quota and Auth issues.
+ */
+const handleGeminiError = (error: any, context: string) => {
+  console.error(`${context} API Error:`, error);
+  
+  const status = error?.status || error?.error?.status;
+  const message = error?.message || error?.error?.message || "";
+
+  if (status === "RESOURCE_EXHAUSTED" || message.includes("quota")) {
+    throw new Error("QUOTA GEMINI HABIS (429): Batas penggunaan API gratis Anda telah tercapai. Tunggu beberapa saat atau gunakan API Key kustom Anda di menu Settings (Neural Override).");
+  }
+
+  if (status === "UNAUTHENTICATED" || message.includes("API key not valid")) {
+    throw new Error("API KEY TIDAK VALID: Mohon periksa kembali API Key Anda di menu Settings.");
+  }
+
+  if (message.includes("fetch")) {
+    throw new Error("KESALAHAN JARINGAN: Gagal menghubungi server neural core. Periksa koneksi internet Anda.");
+  }
+
+  throw new Error(message || `Kegagalan sistem pada jalur ${context}.`);
+};
+
 // Helper to reliably parse JSON from Gemini response
 const parseGeminiResponse = (response: any) => {
   if (!response?.candidates?.[0]) return null;
@@ -133,18 +157,19 @@ export const generateIdeas = async (
       
       REQUIREMENTS:
       1. COVERAGE: Explore deep into ${categoryList}. 
-      2. TONE & MODE: "Sonic Architecture" with focal point on ${mode}.
+      2. BRAND CONSISTENCY: Align themes with the provided Channel Profile Branding.
+      3. TONE & MODE: "Sonic Architecture" with focal point on ${mode}.
          - If Genre Purity: focus on highly consistent, polished execution of the specific genre.
          - If Channel Cohesion: focus on concepts that build a strong, recognizable brand identity across these 5 tracks.
          - If Trend Sprinter: prioritize high-speed virality and current meme/trend synergy.
-      3. CATCHINESS: Focus on concepts with deep hooks and consistent atmosphere.
-      4. TRENDS: Integrate viral social themes or relatable human emotions.`,
+      4. CATCHINESS: Focus on concepts with deep hooks and consistent atmosphere.
+      5. TRENDS: Integrate viral social themes or relatable human emotions.`,
       config: config
     });
 
     const parsed = parseGeminiResponse(response);
     if (!parsed) {
-        throw new Error("Empty or invalid response from neural core");
+        throw new Error("Neural core mengembalikan data kosong atau tidak valid.");
     }
 
     // Extract grounding sources if available
@@ -170,8 +195,7 @@ export const generateIdeas = async (
 
     return topics;
   } catch (error: any) {
-    console.error("generateIdeas API Error:", error);
-    throw error;
+    return handleGeminiError(error, "generateIdeas");
   }
 };
 
@@ -254,7 +278,10 @@ export const generateAlgorithmSuite = async (topicTitle: string, profile?: Chann
       model: getModelId(),
       contents: `Initialize MODULE 2: THE MUSIC ALGORITHM SUITE for the song: "${topicTitle}". 
       ${profileContext}
-      PROVIDE 3 VARIATIONS for Titles and 3 VARIATIONS for Cover Art Prompts.`,
+      REQUIREMENTS:
+      1. TITLE GENERATION: Provide 3 variants for each category: Search Focused, Emotional/Clickbait, and Short-form. (Total 9 titles).
+      2. COVER ART PROMPTS: Generate 3 variants that strictly incorporate visual elements from the Channel Profile for brand recognition.
+      3. METADATA: Optimize for high CTR and discovery.`,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -321,13 +348,12 @@ export const generateAlgorithmSuite = async (topicTitle: string, profile?: Chann
 
     return parseGeminiResponse(response) as SEOPackage;
   } catch (error) {
-    console.error("generateAlgorithmSuite API Error:", error);
-    return null;
+    return handleGeminiError(error, "generateAlgorithmSuite");
   }
 };
 
 export const generateSongStudioData = async (
-  topicTitle: string,
+  topic: Topic,
   profile?: ChannelProfile
 ): Promise<SongStudioData | null> => {
   try {
@@ -340,15 +366,24 @@ export const generateSongStudioData = async (
          The "VISUALIZER PROMPT" MUST anchor on these elements to ensure viewers recognize the channel instantly.`
       : "";
 
+    const contextFromTopic = `
+      SONG CONTEXT:
+      Title: "${topic.title}"
+      Viral Logic / Background Story: "${topic.viralLogic}"
+      Genre: ${topic.genre}
+      Mood: ${topic.mood}
+    `;
+
     const prompt = `
-      Initialize MODULE 3: THE LYRIC & VISUALIZER PRODUCTION for track "${topicTitle}".
+      Initialize MODULE 3: THE LYRIC & VISUALIZER PRODUCTION for track "${topic.title}".
       Generate a complete song layout optimized for Suno AI.
       ${profileContext}
+      ${contextFromTopic}
       
       REQUIREMENTS:
-      1. FULL LYRICS: A unified block of lyrics including structural tags like [Intro], [Verse 1], [Chorus], [Bridge], [Outro]. Make it poetic and rhythmic.
-      2. SONG PRODUCTION DESCRIPTION: A detailed description of the musical arrangement, instruments, and energy transitions to be used in Suno's "Style of Music" or as a guide.
-      3. VISUALIZER PROMPT: A single, extremely detailed prompt for a music video visualizer (Veo). Create a vivid scene that matches the song's energy.
+      1. FULL LYRICS: A unified block of lyrics including structural tags like [Intro], [Verse 1], [Chorus], [Bridge], [Outro]. Make it poetic and rhythmic. CRITICAL: The lyrics MUST directly reflect the events, story, or viral trend described in the "Viral Logic / Background Story" field. Do not just make generic lyrics based on the genre. Ground the lyrics heavily in the context so the song has a real backstory.
+      2. SONG PRODUCTION DESCRIPTION: A detailed and highly dynamic description of the musical arrangement. As a music expert, describe how the arrangement evolves to prevent monotony. Specify dynamic variations (e.g., drops, beat switches, rhythmic variations, dynamic swells, layering changes) while maintaining the chosen genre and core idea. Be extremely creative and specific about the energy transitions and instrumentation details from the intro to the outro to ensure the final music feels attractive, alive, and constantly engaging.
+      3. VISUALIZER PROMPT: A single, extremely detailed prompt for a music video visualizer (Veo). Create a vivid scene that matches the song's energy and the background story.
       
       Provide strictly JSON output.
     `;
@@ -374,8 +409,7 @@ export const generateSongStudioData = async (
     const parsed = parseGeminiResponse(response);
     return parsed as SongStudioData;
   } catch (error) {
-    console.error("generateSongStudioData API Error:", error);
-    return null;
+    return handleGeminiError(error, "generateSongStudioData");
   }
 };
 
@@ -405,7 +439,9 @@ export const generateVeoVideo = async (prompt: string, selectedModel: string = '
     const video = operation.response?.generatedVideos?.[0];
     if (video?.video?.uri) {
         const downloadLink = video.video.uri;
-        const resp = await fetch(downloadLink, {
+        
+        // Use window.fetch explicitly to avoid potential conflicts if global fetch was tinkered with
+        const resp = await window.fetch(downloadLink, {
           method: 'GET',
           headers: {
             'x-goog-api-key': keyToUse || '',
@@ -422,8 +458,7 @@ export const generateVeoVideo = async (prompt: string, selectedModel: string = '
 
     return null;
   } catch (error) {
-    console.error("generateVeoVideo API Error:", error);
-    throw error;
+    return handleGeminiError(error, "generateVeoVideo");
   }
 };
 
@@ -473,7 +508,6 @@ export const generateThumbnail = async (prompt: string, selectedModel: string, i
     }
     return null;
   } catch (error) {
-    console.error("generateThumbnail API Error:", error);
-    throw error;
+    return handleGeminiError(error, "generateThumbnail");
   }
 };

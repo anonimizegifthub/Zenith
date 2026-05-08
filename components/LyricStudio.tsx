@@ -3,7 +3,7 @@ import { generateSongStudioData } from '../services/geminiService';
 import { Topic, SongStudioData, ChannelProfile } from '../types';
 import { Button } from './ui/Button';
 import { LoadingBar } from './ui/LoadingBar';
-import { Music, AlignLeft, Download, ArrowRight, Image, Copy, Sparkles, Zap } from 'lucide-react';
+import { Music, AlignLeft, Download, ArrowRight, Image, Copy, Sparkles, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface LyricStudioProps {
   topic: Topic;
@@ -16,6 +16,7 @@ interface LyricStudioProps {
 export const LyricStudio: React.FC<LyricStudioProps> = ({ topic, initialData, onUpdate, onComplete, channelProfile }) => {
   const [songData, setSongData] = useState<SongStudioData | null>(initialData || null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -25,15 +26,16 @@ export const LyricStudio: React.FC<LyricStudioProps> = ({ topic, initialData, on
 
   const handleGenerate = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const data = await generateSongStudioData(topic.title, channelProfile);
+      const data = await generateSongStudioData(topic, channelProfile);
       if (data) {
         setSongData(data);
         if (onUpdate) onUpdate(data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Gagal membuat lirik. Silakan coba lagi.');
+      setError(error.message || 'Gagal membuat lirik. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
@@ -77,6 +79,21 @@ export const LyricStudio: React.FC<LyricStudioProps> = ({ topic, initialData, on
           text="MENYUSUN LIRIK & ARSITEKTUR SONIK..."
           subtext="MENGHITUNG RITME, RIMA, DAN ATMOSFER UNTUK SUNO AI..."
         />
+      )}
+
+      {error && !loading && (
+        <div className="h-64 flex flex-col items-center justify-center border border-dashed border-red-200 rounded-lg bg-red-50 p-6 text-center animate-fade-in shadow-sm">
+          <AlertTriangle className="w-12 h-12 text-red-600 mb-4" />
+          <h3 className="text-red-700 font-mono font-bold mb-2 uppercase tracking-tighter">Kesalahan Jalur Saraf (API Error)</h3>
+          <p className="text-slate-600 mb-6 text-sm max-w-md">
+            {error}
+          </p>
+          <div className="flex gap-4">
+            <Button onClick={handleGenerate} variant="secondary">
+              <RefreshCw className="w-4 h-4" /> RE-KONEKSI NEURAL
+            </Button>
+          </div>
+        </div>
       )}
 
       {songData && (

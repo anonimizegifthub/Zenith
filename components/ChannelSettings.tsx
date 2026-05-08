@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, Save, Info, Sparkles, Palette, Camera, Hash } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { User, Save, Info, Sparkles, Palette, Camera, Hash, Download, Upload } from 'lucide-react';
 import { ChannelProfile } from '../types';
 import { Button } from './ui/Button';
 
@@ -12,6 +12,7 @@ interface ChannelSettingsProps {
 export const ChannelSettings: React.FC<ChannelSettingsProps> = ({ profile, onSave, onClose }) => {
   const [formData, setFormData] = useState<ChannelProfile>(profile);
   const [justSaved, setJustSaved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     onSave(formData);
@@ -19,9 +20,40 @@ export const ChannelSettings: React.FC<ChannelSettingsProps> = ({ profile, onSav
     setTimeout(() => setJustSaved(false), 2000);
   };
 
+  const handleExport = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "mindform_profile.json");
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const json = JSON.parse(e.target?.result as string);
+          if (json.channelName !== undefined) {
+             setFormData(json);
+             alert("Profil berhasil dimuat! Klik 'Simpan Profil' untuk menerapkan.");
+          } else {
+             alert("Format file tidak valid.");
+          }
+        } catch (error) {
+          alert("Gagal membaca file profil.");
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-xl max-w-2xl w-full overflow-hidden animate-fade-in">
-      <div className="bg-slate-50 border-b border-slate-200 p-6 flex justify-between items-center">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-xl max-w-2xl w-full overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
+      <div className="bg-slate-50 border-b border-slate-200 p-6 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-pink-100 rounded-lg">
             <User className="w-5 h-5 text-pink-600" />
@@ -31,15 +63,40 @@ export const ChannelSettings: React.FC<ChannelSettingsProps> = ({ profile, onSav
             <p className="text-xs text-slate-500 font-mono">Konfigurasi Identitas Visual Mindform</p>
           </div>
         </div>
-        <button 
-          onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          <Hash className="w-5 h-5 rotate-45" />
-        </button>
+        <div className="flex items-center gap-2">
+          <input 
+            type="file" 
+            accept=".json" 
+            ref={fileInputRef} 
+            onChange={handleImport} 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-200 rounded-lg"
+            title="Import Profil"
+          >
+            <Upload className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={handleExport}
+            className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-200 rounded-lg"
+            title="Export Profil"
+          >
+            <Download className="w-5 h-5" />
+          </button>
+          <div className="w-px h-6 bg-slate-300 mx-1"></div>
+          <button 
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-200 rounded-lg"
+            title="Tutup"
+          >
+            <Hash className="w-5 h-5 rotate-45" />
+          </button>
+        </div>
       </div>
 
-      <div className="p-8 space-y-6">
+      <div className="p-8 space-y-6 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">

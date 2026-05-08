@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
+          'node-fetch': path.resolve(__dirname, 'node-fetch-stub.js'),
         }
       }
     };

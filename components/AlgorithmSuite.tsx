@@ -3,7 +3,7 @@ import { generateAlgorithmSuite } from '../services/geminiService';
 import { Topic, SEOPackage, ChannelProfile } from '../types';
 import { Button } from './ui/Button';
 import { LoadingBar } from './ui/LoadingBar';
-import { Search, Image, Hash, MessageSquare, ArrowRight, Copy, Check, Type, Zap } from 'lucide-react';
+import { Search, Image, Hash, MessageSquare, ArrowRight, Copy, Check, Type, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface AlgorithmSuiteProps {
   topic: Topic;
@@ -36,6 +36,7 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
 export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialData, onUpdate, onComplete, channelProfile }) => {
   const [data, setData] = useState<SEOPackage | null>(initialData || null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [lastProcessedTopic, setLastProcessedTopic] = useState<string | null>(initialData ? topic.title : null);
 
   useEffect(() => {
@@ -49,30 +50,53 @@ export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialDa
     // Only fetch if no data exists OR the topic has changed
     if (topic.title !== lastProcessedTopic) {
       setData(null);
+      setError(null);
       
       const fetchData = async () => {
         setLoading(true);
         try {
           const result = await generateAlgorithmSuite(topic.title, channelProfile);
-          setData(result);
-          setLastProcessedTopic(topic.title);
-          if (onUpdate) onUpdate(result);
-        } catch (error) {
+          if (result) {
+            setData(result);
+            setLastProcessedTopic(topic.title);
+            if (onUpdate) onUpdate(result);
+          } else {
+            setError("Neural core mengembalikan data kosong.");
+          }
+        } catch (error: any) {
           console.error(error);
+          setError(error.message || "Kegagalan sistem pada jalur suksesi algoritma.");
         } finally {
           setLoading(false);
         }
       };
       fetchData();
     }
-  }, [topic.title, initialData, lastProcessedTopic, data, onUpdate]);
+  }, [topic.title, initialData, lastProcessedTopic, data, onUpdate, channelProfile]);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <LoadingBar 
         text="MENGHITUNG VEKTOR ALGORITMA..." 
         subtext="MENGOPTIMALKAN METADATA UNTUK RETENSI MAKSIMUM..." 
       />
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="h-64 flex flex-col items-center justify-center border border-dashed border-red-200 rounded-lg bg-red-50 p-6 text-center animate-fade-in shadow-sm">
+        <AlertTriangle className="w-12 h-12 text-red-600 mb-4" />
+        <h3 className="text-red-700 font-mono font-bold mb-2 uppercase tracking-tighter">Kesalahan Jalur Saraf (API Error)</h3>
+        <p className="text-slate-600 mb-6 text-sm max-w-md">
+          {error}
+        </p>
+        <div className="flex gap-4">
+          <Button onClick={() => { setError(null); setLastProcessedTopic(null); }} variant="secondary">
+            <RefreshCw className="w-4 h-4" /> RE-KONEKSI NEURAL
+          </Button>
+        </div>
+      </div>
     );
   }
 
