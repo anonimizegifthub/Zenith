@@ -55,7 +55,7 @@ export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialDa
       const fetchData = async () => {
         setLoading(true);
         try {
-          const result = await generateAlgorithmSuite(topic.title, channelProfile);
+          const result = await generateAlgorithmSuite(topic, channelProfile);
           if (result) {
             setData(result);
             setLastProcessedTopic(topic.title);
@@ -110,9 +110,14 @@ export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialDa
           </h2>
           <p className="text-slate-500 text-sm mt-1">Lagu: {topic.title}</p>
         </div>
-        <Button onClick={() => onComplete(data)} className="bg-pink-600 hover:bg-pink-700">
-          LANJUT KE LIRIK <ArrowRight className="w-4 h-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => { setLastProcessedTopic(""); }} variant="secondary">
+            <RefreshCw className="w-4 h-4 mr-2" /> REGENERATE
+          </Button>
+          <Button onClick={() => onComplete(data)} className="bg-pink-600 hover:bg-pink-700">
+            LANJUT KE LIRIK <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Suno Prompt Box */}
@@ -190,18 +195,20 @@ export const AlgorithmSuite: React.FC<AlgorithmSuiteProps> = ({ topic, initialDa
             {/* Visual Prompts */}
             <div>
               <span className="text-xs font-mono text-slate-500 uppercase block mb-2 flex items-center gap-2">
-                 <Image className="w-3 h-3" /> 3 Variasi Prompts Sampul (Sudah Termasuk Teks)
+                 <Image className="w-3 h-3" /> 3 Variasi Prompts Sampul (Teks Sudah Termasuk)
               </span>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {data.thumbnailPrompts.map((prompt, idx) => (
-                  <div key={idx} className="bg-slate-50 p-3 rounded border border-slate-200 text-sm text-slate-700 flex justify-between items-start gap-2 shadow-sm">
-                    <span className="italic">"{prompt}"</span>
-                    <CopyButton text={prompt} />
+                  <div key={idx} className="bg-slate-50 p-4 rounded border border-slate-200 shadow-sm flex flex-col gap-3">
+                    <div className="text-sm text-slate-700 flex justify-between items-start gap-2">
+                      <span className="italic leading-relaxed">"{prompt}"</span>
+                      <CopyButton text={prompt} />
+                    </div>
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-[10px] text-slate-500 font-mono italic">
-                *Prompt di atas sudah termasuk instruksi overlay judul lagu untuk hasil profesional.
+              <p className="mt-4 text-[10px] text-slate-500 font-mono italic p-3 bg-slate-50 rounded">
+                *Prompt di atas sudah dilengkapi dengan instruksi teks clickbait jujur beserta typography-nya. Saat melakukan generasi gambar, teks tersebut akan langsung tertulis di dalam thumbnail untuk mempercepat proses.
               </p>
             </div>
           </div>

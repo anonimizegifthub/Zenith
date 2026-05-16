@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateIdeas, optimizeManualTopic } from '../services/geminiService';
-import { Topic, SavedProject, Region, MusicGenre, MusicMood, ProductionMode, ChannelProfile } from '../types';
+import { Topic, SavedProject, Region, MusicGenre, MusicMood, ProductionMode, ChannelProfile, SearchTimeframe, SpatialAudioEffect } from '../types';
 import { Button } from './ui/Button';
 import { LoadingBar } from './ui/LoadingBar';
-import { Sparkles, TrendingUp, Eye, Zap, AlertTriangle, RefreshCw, PenTool, ArrowRight, Save, Clock, Trash2, FolderOpen, Upload, Download, FileJson, Globe, Filter, Check, Search, ExternalLink, RotateCcw, LayoutPanelLeft } from 'lucide-react';
+import { Sparkles, TrendingUp, Eye, Zap, AlertTriangle, RefreshCw, PenTool, ArrowRight, Save, Clock, Trash2, FolderOpen, Upload, Download, FileJson, Globe, Filter, Check, Search, ExternalLink, RotateCcw, LayoutPanelLeft, Music } from 'lucide-react';
 
 interface IdeaHubProps {
   onSelectTopic: (topic: Topic) => void;
@@ -39,9 +39,12 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
   
   // New States for Filters
   const [selectedRegion, setSelectedRegion] = useState<Region>(Region.GLOBAL);
+  const [customRegion, setCustomRegion] = useState('');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<SearchTimeframe>(SearchTimeframe.WEEKLY);
   const [selectedCategories, setSelectedCategories] = useState<MusicGenre[]>([]);
-  const [selectedMood, setSelectedMood] = useState<MusicMood | 'ALL'>('ALL');
+  const [selectedMoods, setSelectedMoods] = useState<MusicMood[]>([]);
   const [selectedMode, setSelectedMode] = useState<ProductionMode>(ProductionMode.GENRE_PURITY);
+  const [isInstrumental, setIsInstrumental] = useState(false);
   
   // Manual Input State
   const [manualInput, setManualInput] = useState('');
@@ -54,6 +57,34 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
     setSelectedCategories(prev => 
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
     );
+  };
+
+  const toggleMood = (mood: MusicMood) => {
+    setSelectedMoods(prev => 
+      prev.includes(mood) ? prev.filter(m => m !== mood) : [...prev, mood]
+    );
+  };
+
+  const getSuggestedMoods = (): MusicMood[] => {
+    const suggestions = new Set<MusicMood>();
+    if (selectedCategories.includes(MusicGenre.PHONK_DRIFT)) {
+      suggestions.add(MusicMood.POWERFUL_FEARLESS);
+      suggestions.add(MusicMood.DOMINANT_DANGEROUS);
+      suggestions.add(MusicMood.ADRENALINE_REBELLION);
+    }
+    if (selectedCategories.includes(MusicGenre.LOFI_CHILL)) {
+      suggestions.add(MusicMood.NOSTALGIC);
+      suggestions.add(MusicMood.PEACEFUL_SAFE);
+      suggestions.add(MusicMood.INTROSPECTIVE);
+      suggestions.add(MusicMood.COMFORTING);
+    }
+    if (selectedCategories.includes(MusicGenre.AMAPIANO_AFRO_TECH)) {
+      suggestions.add(MusicMood.WARM_SENSUAL);
+      suggestions.add(MusicMood.EXPENSIVE);
+      suggestions.add(MusicMood.ALIVE_MAGNETIC);
+      suggestions.add(MusicMood.SOCIAL_ENERGY);
+    }
+    return Array.from(suggestions);
   };
 
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -80,7 +111,18 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
     updateIdeas([]);
     setErrorMessage('');
     try {
-      const result = await generateIdeas(selectedRegion, selectedCategories, useSearchGrounding, selectedMode, channelProfile);
+      const result = await generateIdeas(
+        selectedRegion, 
+        selectedCategories, 
+        useSearchGrounding, 
+        selectedMode, 
+        channelProfile, 
+        selectedMoods, 
+        selectedTimeframe,
+        SpatialAudioEffect.NONE,
+        isInstrumental,
+        customRegion
+      );
       if (result && result.length > 0) {
         // Sort by CTR descending
         const sortedIdeas = [...result].sort((a, b) => b.predictedCTR - a.predictedCTR);
@@ -102,7 +144,7 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
     if (!manualInput.trim()) return;
     setManualLoading(true);
     try {
-      const optimizedTopic = await optimizeManualTopic(manualInput, useSearchGrounding);
+      const optimizedTopic = await optimizeManualTopic(manualInput, useSearchGrounding, SpatialAudioEffect.NONE, isInstrumental);
       if (optimizedTopic) {
         updateIdeas([optimizedTopic, ...ideas]);
         setManualInput('');
@@ -173,14 +215,35 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
     event.target.value = '';
   };
 
-  const handleExportJSON = (project: SavedProject, e: React.MouseEvent) => {
+  const handleExportJSON = async (project: SavedProject, e: React.MouseEvent) => {
     e.stopPropagation();
     const jsonStr = JSON.stringify(project, null, 2);
+    const suggestedName = `VOID_BACKUP_${project.topic.title.substring(0, 15).replace(/\s+/g, '_')}_${Date.now()}.json`;
+
+    try {
+      if ('showSaveFilePicker' in window && window.self === window.top) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName,
+          types: [{
+            description: 'JSON Files',
+            accept: {'application/json': ['.json']}
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(jsonStr);
+        await writable.close();
+        return;
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      console.error(err);
+    }
+
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `VOID_BACKUP_${project.topic.title.substring(0, 15).replace(/\s+/g, '_')}_${Date.now()}.json`;
+    a.download = suggestedName;
     a.click();
   };
 
@@ -239,6 +302,19 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
               NEURAL SEARCH {useSearchGrounding ? 'ON' : 'OFF'}
             </button>
 
+            <button
+               onClick={() => setIsInstrumental(!isInstrumental)}
+               className={`px-3 py-1 text-[10px] font-mono border rounded transition-all flex items-center gap-2 ${
+                 isInstrumental 
+                   ? 'border-indigo-300 text-indigo-600 bg-indigo-50 shadow-sm' 
+                   : 'border-slate-200 text-slate-500 hover:text-slate-700'
+               }`}
+               title="Mode Instrumental (Tanpa Vokal/Lirik)"
+            >
+              <Music className={`w-3 h-3 ${isInstrumental ? 'text-indigo-600' : ''}`} />
+              INSTRUMENTAL {isInstrumental ? 'ON' : 'OFF'}
+            </button>
+
             <Button onClick={fetchIdeas} variant="secondary" isLoading={loading} disabled={manualLoading}>
               <RefreshCw className="w-4 h-4" /> REKOMENDASI MUSIK
             </Button>
@@ -286,17 +362,21 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
 
       {/* Filters Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-4 bg-slate-50 border border-slate-200 p-5 rounded-lg shadow-sm">
+        {/* Row 1 */}
+        <div className="lg:col-span-3 bg-slate-50 border border-slate-200 p-5 rounded-lg shadow-sm">
           <label className="text-[10px] font-mono text-slate-500 uppercase flex items-center gap-2 mb-3">
             <Globe className="w-3 h-3 text-cyan-600" /> Fokus Wilayah (Tren Regional)
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             {Object.values(Region).map((region) => (
               <button
                 key={region}
-                onClick={() => setSelectedRegion(region)}
+                onClick={() => {
+                  setSelectedRegion(region);
+                  setCustomRegion(''); // Clear custom when selecting preset
+                }}
                 className={`px-3 py-2 text-xs font-mono rounded border transition-all ${
-                  selectedRegion === region 
+                  selectedRegion === region && !customRegion
                     ? 'bg-cyan-50 border-cyan-500 text-cyan-700 shadow-sm' 
                     : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
                 }`}
@@ -305,9 +385,45 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
               </button>
             ))}
           </div>
+          
+          <div className="mt-2 pt-2 border-t border-slate-200">
+            <label className="text-[9px] font-mono text-slate-400 uppercase block mb-1">Input Negara Manual</label>
+            <input 
+              type="text"
+              value={customRegion}
+              onChange={(e) => setCustomRegion(e.target.value)}
+              placeholder="Contoh: Indonesia, Russia, Japan"
+              className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs font-mono outline-none focus:border-cyan-500 transition-all"
+            />
+            <p className="text-[8px] text-slate-400 mt-1 italic leading-tight">
+              Gunakan ini untuk mempersempit area tren yang dicari ke negara spesifik.
+            </p>
+          </div>
         </div>
 
-        <div className="lg:col-span-4 bg-slate-50 border border-slate-200 p-5 rounded-lg shadow-sm">
+        <div className="lg:col-span-3 bg-slate-50 border border-slate-200 p-5 rounded-lg shadow-sm">
+          <label className="text-[10px] font-mono text-slate-500 uppercase flex items-center gap-2 mb-3">
+            <Clock className="w-3 h-3 text-indigo-600" /> Rentang Waktu
+          </label>
+          <div className="flex flex-col gap-2">
+            {Object.values(SearchTimeframe).map((timeframe) => (
+              <button
+                key={timeframe}
+                onClick={() => setSelectedTimeframe(timeframe)}
+                className={`px-3 py-2 text-xs font-mono rounded border transition-all text-left flex justify-between items-center ${
+                  selectedTimeframe === timeframe 
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-sm' 
+                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                }`}
+              >
+                {timeframe.toUpperCase()}
+                {selectedTimeframe === timeframe && <Check className="w-3 h-3" />}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg:col-span-3 bg-slate-50 border border-slate-200 p-5 rounded-lg shadow-sm">
           <label className="text-[10px] font-mono text-slate-500 uppercase flex items-center gap-2 mb-3">
             <LayoutPanelLeft className="w-3 h-3 text-emerald-600" /> Production Mode (Consistency)
           </label>
@@ -329,10 +445,14 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-slate-50 border border-slate-200 p-5 rounded-lg shadow-sm">
-          <div className="flex flex-col gap-6">
+        {/* Empty space to maintain layout or can add other filters here later */}
+        <div className="lg:col-span-3"></div>
+
+        {/* Categories & Moods Row */}
+        <div className="lg:col-span-12 bg-slate-50 border border-slate-200 p-5 rounded-lg shadow-sm">
+          <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1">
-              <label className="text-[10px] font-mono text-slate-500 uppercase flex items-center gap-2 mb-3">
+              <label className="text-[10px] font-mono text-slate-500 uppercase flex items-center gap-2 mb-4">
                 <Filter className="w-3 h-3 text-pink-600" /> Genre Eksplorasi
               </label>
               <div className="flex flex-wrap gap-2">
@@ -353,20 +473,32 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
               </div>
             </div>
             
-            <div className="w-full">
-              <label className="text-[10px] font-mono text-slate-500 uppercase flex items-center gap-2 mb-3">
+            <div className="flex-1">
+              <label className="text-[10px] font-mono text-slate-500 uppercase flex items-center gap-2 mb-4">
                 <Sparkles className="w-3 h-3 text-pink-600" /> Filter Mood
               </label>
-              <select 
-                value={selectedMood}
-                onChange={(e) => setSelectedMood(e.target.value as any)}
-                className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs font-mono text-slate-700 focus:border-pink-500 outline-none shadow-sm"
-              >
-                <option value="ALL">SEMUA MOOD</option>
-                {Object.values(MusicMood).map(mood => (
-                  <option key={mood} value={mood}>{mood.toUpperCase()}</option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-2">
+                {Object.values(MusicMood).map((mood) => {
+                  const isSuggested = getSuggestedMoods().includes(mood);
+                  return (
+                    <button
+                      key={mood}
+                      onClick={() => toggleMood(mood)}
+                      className={`px-3 py-1.5 text-[10px] font-mono rounded-full border transition-all flex items-center gap-1 ${
+                        selectedMoods.includes(mood)
+                          ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-sm'
+                          : isSuggested
+                            ? 'bg-yellow-50 border-yellow-300 text-yellow-700 shadow-sm hover:border-yellow-400'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                      }`}
+                    >
+                      {selectedMoods.includes(mood) && <Check className="w-2 h-2" />}
+                      {!selectedMoods.includes(mood) && isSuggested && <Sparkles className="w-2 h-2" />}
+                      {mood}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -454,6 +586,16 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
                     {topic.mood}
                   </span>
                 )}
+                {topic.isInstrumental && (
+                  <span className="px-2 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] uppercase font-mono rounded">
+                    Instrumental Mode
+                  </span>
+                )}
+                {topic.spatialAudio && topic.spatialAudio !== 'None' && (
+                  <span className="px-2 py-1 bg-purple-50 border border-purple-100 text-purple-700 text-[10px] uppercase font-mono rounded">
+                    {topic.spatialAudio}
+                  </span>
+                )}
                 {topic.tempo && (
                   <span className="px-2 py-1 bg-orange-50 border border-orange-100 text-orange-700 text-[10px] uppercase font-mono rounded">
                     {topic.tempo}
@@ -462,6 +604,15 @@ export const IdeaHub: React.FC<IdeaHubProps> = ({
               </div>
               
               <div className="space-y-4">
+                {topic.issueContext && (
+                  <div className="bg-cyan-50 p-3 rounded border border-cyan-100">
+                    <div className="flex items-center gap-2 text-cyan-700 text-xs font-mono mb-1 uppercase">
+                      <Sparkles className="w-3 h-3" /> Konteks Isu (Sumber Ide)
+                    </div>
+                    <p className="text-slate-700 text-sm leading-relaxed">{topic.issueContext}</p>
+                  </div>
+                )}
+                
                 <div className="bg-slate-50 p-3 rounded border border-slate-100">
                   <div className="flex items-center gap-2 text-pink-600 text-xs font-mono mb-1 uppercase">
                     <TrendingUp className="w-3 h-3" /> Potensi Viral

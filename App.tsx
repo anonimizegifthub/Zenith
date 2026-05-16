@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { IdeaHub } from './components/IdeaHub';
 import { AlgorithmSuite } from './components/AlgorithmSuite';
+import { CustomizationStudio } from './components/CustomizationStudio';
 import { LyricStudio } from './components/LyricStudio';
 import { ProductionReport } from './components/ProductionReport';
 import { VeoStudio } from './components/VeoStudio';
@@ -38,6 +39,11 @@ const App: React.FC = () => {
       setSeoData(null);
       setSongData(null);
     }
+    setSelectedTopic(topic);
+    setStage(AppStage.CUSTOMIZATION);
+  };
+
+  const handleCustomizationComplete = (topic: Topic) => {
     setSelectedTopic(topic);
     setStage(AppStage.ALGORITHM_SUITE);
   };
@@ -144,7 +150,7 @@ const App: React.FC = () => {
               <Settings className="w-5 h-5" />
             </button>
             <div className="hidden md:block">
-              <h1 className="font-mono font-bold text-lg tracking-wider text-slate-900 uppercase">Void Music</h1>
+              <h1 className="font-mono font-bold text-lg tracking-wider text-slate-900 uppercase">Void Horizon Pro</h1>
               <div className="text-[10px] text-pink-600 tracking-[0.2em] font-mono leading-none">AI MUSIC PRODUCTION V1.0</div>
             </div>
           </div>
@@ -235,6 +241,18 @@ const App: React.FC = () => {
                 </button>
                 
                 <div className={`w-8 h-px bg-slate-200 hidden md:block`}></div>
+
+                <button 
+                  onClick={() => selectedTopic && setStage(AppStage.CUSTOMIZATION)}
+                  disabled={!selectedTopic}
+                  className={`flex items-center gap-2 transition-colors ${
+                    stage === AppStage.CUSTOMIZATION ? 'text-indigo-600 font-bold' : ''
+                  } ${!selectedTopic ? 'opacity-50 cursor-not-allowed' : 'hover:text-indigo-600'}`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${stage === AppStage.CUSTOMIZATION ? 'bg-indigo-600' : selectedTopic ? 'bg-slate-400' : 'bg-slate-200'}`}></span> KOSTUMISASI
+                </button>
+                
+                <div className={`w-8 h-px bg-slate-200 hidden md:block`}></div>
                 
                 <button 
                   onClick={() => selectedTopic && setStage(AppStage.ALGORITHM_SUITE)}
@@ -278,6 +296,14 @@ const App: React.FC = () => {
                 persistentIdeas={generatedIdeas}
                 onIdeasUpdate={setGeneratedIdeas}
                 channelProfile={channelProfile}
+              />
+            )}
+
+            {stage === AppStage.CUSTOMIZATION && selectedTopic && (
+              <CustomizationStudio
+                topic={selectedTopic}
+                onUpdate={setSelectedTopic}
+                onComplete={handleCustomizationComplete}
               />
             )}
 
@@ -328,7 +354,7 @@ const App: React.FC = () => {
       {/* Footer */}
       <footer className="fixed bottom-0 w-full py-4 bg-white border-t border-slate-200 text-center z-40">
         <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-          Sistem Void Music // Integrasi Suno AI & Gemini // Built by Andik Priyanto
+          Void Horizon Production Suite // Integrasi Suno AI & Gemini // AI Music Engine
         </p>
       </footer>
     </div>

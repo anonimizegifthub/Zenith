@@ -26,7 +26,7 @@ export const ProductionReport: React.FC<ProductionReportProps> = ({
     setTimeout(() => setJustSaved(false), 3000);
   };
 
-  const handleExportJSON = () => {
+  const handleExportJSON = async () => {
     if (!seoData || !songData) return;
 
     const projectData = {
@@ -39,15 +39,36 @@ export const ProductionReport: React.FC<ProductionReportProps> = ({
     };
 
     const jsonStr = JSON.stringify(projectData, null, 2);
+    const suggestedName = `VOID_PROJECT_${topic.title.substring(0, 15).replace(/\s+/g, '_')}_${Date.now()}.json`;
+
+    try {
+      if ('showSaveFilePicker' in window && window.self === window.top) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName,
+          types: [{
+            description: 'JSON Files',
+            accept: {'application/json': ['.json']}
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(jsonStr);
+        await writable.close();
+        return;
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      console.error(err);
+    }
+
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `VOID_PROJECT_${topic.title.substring(0, 15).replace(/\s+/g, '_')}_${Date.now()}.json`;
+    a.download = suggestedName;
     a.click();
   };
 
-  const exportFullProjectText = () => {
+  const exportFullProjectText = async () => {
     if (!seoData || !songData) return;
 
     let content = `VOID MUSIC - PRODUCTION REPORT\n`;
@@ -67,15 +88,37 @@ export const ProductionReport: React.FC<ProductionReportProps> = ({
     content += `Tags: ${seoData.tags.join(', ')}\n\n`;
 
     content += `--- MODULE 3: SONG PRODUCTION & LYRICS ---\n`;
+    content += `[ UNIFIED MASTER PROMPT ]\n${songData.unifiedSunoPrompt}\n\n`;
     content += `[ PRODUCTION DESCRIPTION ]\n${songData.productionDescription}\n\n`;
     content += `[ FULL LYRICS ]\n${songData.lyrics}\n\n`;
     content += `[ VISUALIZER PROMPT ]\n${songData.visualizerPrompt}\n\n`;
+
+    const suggestedName = `FULL_REPORT_${topic.title.replace(/\s+/g, '_')}.txt`;
+
+    try {
+      if ('showSaveFilePicker' in window && window.self === window.top) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName,
+          types: [{
+            description: 'Text Files',
+            accept: {'text/plain': ['.txt']}
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        return;
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      console.error(err);
+    }
 
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `FULL_REPORT_${topic.title.replace(/\s+/g, '_')}.txt`;
+    a.download = suggestedName;
     a.click();
   };
 
@@ -111,9 +154,18 @@ export const ProductionReport: React.FC<ProductionReportProps> = ({
                 <p className="text-slate-700">{topic.genre} / {topic.mood}</p>
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase font-mono">Suno Style Prompt</label>
-                <div className="bg-slate-50 p-3 rounded text-xs font-mono text-cyan-800 mt-1 border border-slate-200">
-                  {seoData.sunoStyle}
+                <label className="text-[10px] text-slate-500 uppercase font-mono">Master Prompt (Unified)</label>
+                <div className="bg-indigo-50 p-3 rounded text-xs font-mono text-indigo-800 mt-1 border border-indigo-100 flex justify-between items-start gap-4">
+                  <div className="flex-1">{songData.unifiedSunoPrompt}</div>
+                  <Button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(songData.unifiedSunoPrompt);
+                      alert('Master Prompt berhasil disalin!');
+                    }} 
+                    className="p-1.5 h-auto bg-indigo-200 hover:bg-indigo-300 text-indigo-700 shrink-0"
+                  >
+                    <ClipboardCheck className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </div>

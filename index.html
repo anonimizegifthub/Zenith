@@ -3,11 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Void Horizon Production Engine</title>
+    <title>Void Music by Andik</title>
     <script>
       /**
        * SHIMS & POLYFILLS for Production Stability
        */
+       try {
+         const originalFetch = window.fetch;
+         Object.defineProperty(window, 'fetch', {
+           get: () => originalFetch,
+           set: () => {}, // intercept setter to prevent TypeError
+           configurable: true
+         });
+       } catch(e) {}
     </script>
   </head>
   <body>

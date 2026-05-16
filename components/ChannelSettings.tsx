@@ -20,11 +20,30 @@ export const ChannelSettings: React.FC<ChannelSettingsProps> = ({ profile, onSav
     setTimeout(() => setJustSaved(false), 2000);
   };
 
-  const handleExport = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formData, null, 2));
+  const handleExport = async () => {
+    const jsonStr = JSON.stringify(formData, null, 2);
+    try {
+      if ('showSaveFilePicker' in window && window.self === window.top) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: "void_music_profile.json",
+          types: [{
+            description: 'JSON Files',
+            accept: {'application/json': ['.json']}
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(jsonStr);
+        await writable.close();
+        return;
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      console.error(err);
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonStr);
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "mindform_profile.json");
+    downloadAnchorNode.setAttribute("download", "void_music_profile.json");
     document.body.appendChild(downloadAnchorNode); // required for firefox
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
